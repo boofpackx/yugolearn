@@ -737,15 +737,6 @@ YugoRouter.register("/", (container) => {
         </div>
       </a>
 
-      <a href="#/tutor" class="tile c-red">
-        <span class="tile-badge">LOCAL AI</span>
-        <div class="tile-key">🤖</div>
-        <div>
-          <div class="tile-title">AI Serbian Tutor</div>
-          <div class="tile-sub">Roleplay Kafana & Dorćol talk with instant feedback</div>
-        </div>
-      </a>
-
       <a href="#/mistakes" class="tile c-pink">
         <span class="tile-badge">WEAK SPOTS</span>
         <div class="tile-key">🎯</div>
@@ -2276,7 +2267,6 @@ YugoRouter.register("/srs", async (container) => {
         </p>
         <div class="row center">
           <button class="btn btn-yellow btn-lg" id="btn-srs-all">⚡ Review 15 Cards Ahead of Schedule</button>
-          <a href="#/tutor" class="btn btn-red btn-lg">Chat with Belgrade AI Tutor →</a>
           <a href="#/logistics" class="btn btn-ink btn-lg">View 7-Day Forecast</a>
         </div>
       </div>
@@ -2430,7 +2420,6 @@ YugoRouter.register("/srs", async (container) => {
         </div>
         <div class="row center" style="margin-top:24px;">
           <a href="#/logistics" class="btn btn-yellow btn-lg">View Memory Forecast 📊</a>
-          <a href="#/tutor" class="btn btn-red btn-lg">Practice with Belgrade AI Tutor →</a>
           <a href="#/" class="btn btn-ink btn-lg">Return Home</a>
         </div>
       </div>
@@ -2442,211 +2431,6 @@ YugoRouter.register("/srs", async (container) => {
   } else {
     renderCard();
   }
-});
-
-// -------------------------------------------------------------
-// 15. VIEW: AI SERBIAN TUTOR & ROLEPLAY
-// -------------------------------------------------------------
-YugoRouter.register("/tutor", async (container) => {
-  container.innerHTML = `
-    <div class="page-head">
-      <span class="kicker">ВЕШТАЧКА ИНТЕЛИГЕНЦИЈА · NATIVE IMMERSION</span>
-      <h1>BELGRADE AI TUTOR</h1>
-      <p class="lead">Conversational roleplay with local intelligence (Ollama GPU + Serbian NLP). Practice Kafana banter, street directions, and grammar.</p>
-    </div>
-
-    <div class="tutor-layout">
-      <div class="scenario-tabs" id="scenario-tabs">
-        <button class="scenario-tab active" data-scenario="kafana">☕ Belgrade Kafana</button>
-        <button class="scenario-tab" data-scenario="friend">🤝 Dorćol Friend</button>
-        <button class="scenario-tab" data-scenario="market">🛒 Kalenić Market</button>
-        <button class="scenario-tab" data-scenario="tutor">🎓 Professor Vuk (Grammar)</button>
-      </div>
-
-      <div class="tutor-chat-box">
-        <div class="chat-head">
-          <div id="chat-title" style="font-weight:700;">☕ Belgrade Kafana (Waiter Dušan)</div>
-          <div class="row tight">
-            <span class="hud-item" id="ai-model-tag" style="background:var(--yellow);color:var(--text-on-light);font-size:0.75rem;">
-              ⚡ ${YugoAPI.activeModel.toUpperCase()}
-            </span>
-            <button class="btn btn-sm btn-ink" id="btn-clear-chat">Clear</button>
-          </div>
-        </div>
-
-        <div class="chat-messages" id="chat-messages"></div>
-
-        <div class="chat-starters" id="chat-starters"></div>
-
-        <div class="box-flat" style="padding:6px 14px;background:var(--paper);border-top:var(--b);">
-          <small style="font-weight:700;letter-spacing:0.06em;color:var(--mute);">QUICK SERBIAN CYRILLIC KEYS:</small>
-          <div style="display:inline-flex;gap:4px;margin-left:8px;flex-wrap:wrap;">
-            ${["Ђ", "Ј", "Љ", "Њ", "Ћ", "Џ", "Č", "Ć", "Ž", "Š", "Đ"].map(k => `
-              <button class="btn btn-sm btn-yellow s-key" style="padding:1px 6px;font-size:0.8rem;" data-k="${k}">${k}</button>
-            `).join("")}
-          </div>
-        </div>
-
-        <div class="chat-input-bar">
-          <input type="text" id="chat-input" placeholder="Type Serbian in Cyrillic or Latin (e.g. Једну кафу, молим)..." autocomplete="off">
-          <button class="btn btn-red btn-lg" id="btn-chat-send">Send ↵</button>
-        </div>
-      </div>
-    </div>
-  `;
-
-  const tabs = document.querySelectorAll(".scenario-tab");
-  const msgContainer = document.getElementById("chat-messages");
-  const startersContainer = document.getElementById("chat-starters");
-  const inputEl = document.getElementById("chat-input");
-  const sendBtn = document.getElementById("btn-chat-send");
-  const titleEl = document.getElementById("chat-title");
-
-  let curScenario = "kafana";
-  const scenariosData = await YugoAPI.getScenarios();
-
-  const startersMap = {
-    kafana: [
-      "Једну домаћу кафу, молим.",
-      "Шта имате од јела?",
-      "Колико кошта пиво?",
-      "Рачун, молим!"
-    ],
-    friend: [
-      "Ћао! Како си данас?",
-      "Шта радиш у Београду?",
-      "Хоћемо ли у кафић?",
-      "Где се налази Калемегдан?"
-    ],
-    market: [
-      "Пошто су јабуке данас?",
-      "Желим два килограма сира.",
-      "Да ли је ово домаћи кајмак?",
-      "Хвала лепо, пријатно!"
-    ],
-    tutor: [
-      "Објасни ми 7 падежа укратко.",
-      "Која је разлика између Ћ и Ч?",
-      "Како се мења глагол 'бити'?",
-      "Зашто је слово В лажни пријатељ?"
-    ]
-  };
-
-  function appendMessage(sender, text, latin = "", en = "", correction = "") {
-    const bubble = document.createElement("div");
-    bubble.className = `chat-bubble ${sender}`;
-
-    const senderLabel = sender === "user" ? "YOU · ТИ" : (
-      curScenario === "kafana" ? "DUŠAN (WAITPERSON)" :
-      curScenario === "friend" ? "MILICA (FRIEND)" :
-      curScenario === "market" ? "JOVANKA (VENDOR)" : "PROFESSOR VUK"
-    );
-
-    bubble.innerHTML = `
-      <div class="chat-sender">
-        <span>${senderLabel}</span>
-        ${sender === "assistant" ? `<button class="btn btn-sm btn-yellow btn-speak-msg">🔊 Speak</button>` : ""}
-      </div>
-      <div class="chat-cyr">${text}</div>
-      ${latin ? `<div class="chat-lat">Latinica: ${latin}</div>` : ""}
-      ${en ? `<div class="chat-en">English: ${en}</div>` : ""}
-      ${correction ? `<div class="chat-correction">💡 <b>Linguistic Tip:</b> ${correction}</div>` : ""}
-    `;
-
-    if (sender === "assistant") {
-      bubble.querySelector(".btn-speak-msg")?.addEventListener("click", () => {
-        YugoAudio.speak(text);
-      });
-    }
-
-    msgContainer.appendChild(bubble);
-    msgContainer.scrollTop = msgContainer.scrollHeight;
-  }
-
-  function setScenario(scId) {
-    curScenario = scId;
-    tabs.forEach(t => t.classList.toggle("active", t.dataset.scenario === scId));
-
-    const sData = scenariosData[scId] || {};
-    titleEl.textContent = sData.title || scId;
-    msgContainer.innerHTML = "";
-
-    // Starter assistant greeting
-    const greeting = sData.starter || "Здраво! Изволите, како могу да помогнем?";
-    appendMessage("assistant", greeting, YugoTranslit.toLatin(greeting));
-
-    // Render quick starters
-    const chips = startersMap[scId] || [];
-    startersContainer.innerHTML = chips.map(c => `
-      <button class="starter-chip" data-text="${c}">${c}</button>
-    `).join("");
-
-    startersContainer.querySelectorAll(".starter-chip").forEach(btn => {
-      btn.addEventListener("click", () => {
-        inputEl.value = btn.dataset.text;
-        sendMessage();
-      });
-    });
-  }
-
-  async function sendMessage() {
-    const text = inputEl.value.trim();
-    if (!text) return;
-    inputEl.value = "";
-
-    // Render user bubble
-    appendMessage("user", text);
-    YugoAudio.fxClick();
-
-    // Show typing state
-    const typingBubble = document.createElement("div");
-    typingBubble.className = "chat-bubble assistant";
-    typingBubble.id = "typing-bubble";
-    typingBubble.innerHTML = `<i>● ● ● Thinking in Serbian...</i>`;
-    msgContainer.appendChild(typingBubble);
-    msgContainer.scrollTop = msgContainer.scrollHeight;
-
-    // Send to backend
-    const resp = await YugoAPI.sendAIChat(curScenario, text);
-    typingBubble.remove();
-
-    if (resp) {
-      appendMessage(
-        "assistant",
-        resp.reply_display || resp.reply_raw,
-        resp.latin || "",
-        resp.english || "",
-        resp.correction || ""
-      );
-      YugoAudio.fxCorrect();
-      YugoStore.addXP(5);
-    } else {
-      appendMessage("assistant", "Извините, дошло је до грешке у вези са локалним сервером.", "Izvinite, doslo je do greske.");
-    }
-  }
-
-  tabs.forEach(t => {
-    t.addEventListener("click", () => setScenario(t.dataset.scenario));
-  });
-
-  sendBtn.addEventListener("click", sendMessage);
-  inputEl.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") sendMessage();
-  });
-
-  // Serbian keys
-  container.querySelectorAll(".s-key").forEach(k => {
-    k.addEventListener("click", () => {
-      inputEl.value += k.dataset.k;
-      inputEl.focus();
-    });
-  });
-
-  document.getElementById("btn-clear-chat")?.addEventListener("click", () => {
-    setScenario(curScenario);
-  });
-
-  setScenario("kafana");
 });
 
 // -------------------------------------------------------------
@@ -3041,7 +2825,6 @@ YugoRouter.register("/logistics", async (container) => {
       <div style="margin-top:12px;font-size:0.9rem;display:grid;gap:8px;">
         <div><b>Database Path:</b> <code>backend/yugolearn.db</code> (Persistent across all sessions)</div>
         <div><b>Mode:</b> WAL (Write-Ahead Logging) with ACID compliance</div>
-        <div><b>Local Intelligence:</b> Ollama GPU (qwen3:4b) + Serbian Heuristic NLP</div>
       </div>
       <div class="row" style="margin-top:16px;">
         <button class="btn btn-yellow btn-md" id="btn-force-sync">Force Persistent Sync</button>
@@ -3050,7 +2833,6 @@ YugoRouter.register("/logistics", async (container) => {
       <div style="margin-top:12px;font-size:0.9rem;display:grid;gap:8px;">
         <div><b>Storage:</b> This browser's local storage (kept between visits on this device)</div>
         <div><b>Scheduling:</b> Same SM-2 logistics as the SQLite backend</div>
-        <div><b>Local Intelligence:</b> Built-in Serbian Heuristic NLP</div>
       </div>`}
     </div>
   `;
@@ -3222,17 +3004,15 @@ YugoRouter.register("/settings", (container) => {
       </div>
 
       <div class="box field">
-        <div class="lbl">Local Intelligence & Persistent Memory (Backend)</div>
+        <div class="lbl">Persistent Memory</div>
         <p class="help">
           ${YugoAPI.isOnline
             ? `Connected to local SQLite database: <code>backend/yugolearn.db</code>.`
-            : `Browser mode: progress is saved in this browser. Run <code>start_yugolearn.bat</code> on your PC for the SQLite database and Ollama AI.`}
-          Local AI model: <b>${YugoAPI.activeModel.toUpperCase()}</b>.
+            : `Browser mode: progress is saved in this browser. Run <code>start_yugolearn.bat</code> on your PC to use the SQLite database instead.`}
         </p>
         <div class="row">
           ${YugoAPI.isOnline ? `<button class="btn btn-yellow btn-sm" id="btn-sync-sqlite">💾 Sync State to SQLite Database</button>` : ""}
           <a href="#/logistics" class="btn btn-ink btn-sm">📊 View Logistics Forecast</a>
-          <a href="#/tutor" class="btn btn-red btn-sm">🤖 Open AI Belgrade Tutor</a>
         </div>
       </div>
 

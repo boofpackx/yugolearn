@@ -161,7 +161,7 @@ class SRSLogistics:
             "recommended_focus": (
                 "Conquer your unresolved mistakes in the Mistakes Journal!" if unresolved_mistakes > 4
                 else "Clear your Spaced Repetition queue to lock down memory retention!" if due_count > 0
-                else "Explore new vocabulary or chat with the Belgrade AI Tutor!"
+                else "Explore new vocabulary or run a quick letter drill!"
             )
         }
 

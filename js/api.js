@@ -1,14 +1,13 @@
 /* =========================================================
    YUGOLEARN — Backend API & Persistent Memory Client
-   Seamless synchronization between browser & SQLite DB,
-   Local Ollama AI intelligence, and SRS logistics.
+   Seamless synchronization between browser & SQLite DB
+   and SRS logistics.
    ========================================================= */
 
 const YugoAPI = {
   // Base URL pointing to local FastAPI server
   baseUrl: "http://127.0.0.1:8000/api",
   isOnline: false,
-  activeModel: "Loading...",
   _health: null,
 
   // The Python backend only ever runs on the learner's own machine. A hosted
@@ -34,8 +33,7 @@ const YugoAPI = {
       if (!resp.ok) throw new Error("Health check failed");
       const data = await resp.json();
       this.isOnline = true;
-      this.activeModel = data.ai?.active_model || "Built-in NLP";
-      this.updateHudBadge(true, data.ai?.active_model);
+      this.updateHudBadge(true);
       return data;
     } catch (e) {
       this.useBrowserEngine();
@@ -45,7 +43,6 @@ const YugoAPI = {
 
   useBrowserEngine() {
     this.isOnline = false;
-    this.activeModel = "Built-in Serbian NLP";
     this.updateHudBadge(false);
   },
 
@@ -55,17 +52,17 @@ const YugoAPI = {
     return this.isOnline;
   },
 
-  updateHudBadge(online, modelName = "") {
+  updateHudBadge(online) {
     const el = document.getElementById("hud-backend");
     if (!el) return;
     if (online) {
       el.className = "hud-item hud-backend online";
-      el.innerHTML = `⚡ <span class="dot"></span> AI: <b>${modelName.split(":")[0].toUpperCase()}</b> · DB: ON`;
-      el.title = `Connected to local SQLite database & Ollama (${modelName})`;
+      el.innerHTML = `⚡ <span class="dot"></span> DB: ON`;
+      el.title = "Connected to local SQLite database";
     } else {
       el.className = "hud-item hud-backend offline";
       el.innerHTML = `💾 <span class="dot"></span> BROWSER MODE`;
-      el.title = "Progress is saved in this browser. Run the local backend for SQLite memory & the Ollama AI tutor.";
+      el.title = "Progress is saved in this browser. Run the local backend to use the SQLite database.";
     }
   },
 
@@ -273,51 +270,9 @@ const YugoAPI = {
       console.warn("API deleteVocab failed:", e);
     }
     return null;
-  },
-
-  // Local AI & Conversational Tutor
-  async getScenarios() {
-    if (!(await this.useServer())) return YugoLocal.getScenarios();
-    try {
-      const resp = await fetch(`${this.baseUrl}/ai/scenarios`);
-      if (resp.ok) return await resp.json();
-    } catch (e) {
-      console.warn("API getScenarios failed:", e);
-    }
-    return {};
-  },
-
-  async sendAIChat(scenario, message, model = null) {
-    if (!(await this.useServer())) return YugoLocal.sendAIChat(scenario, message);
-    try {
-      const resp = await fetch(`${this.baseUrl}/ai/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scenario, message, model })
-      });
-      if (resp.ok) return await resp.json();
-    } catch (e) {
-      console.warn("API sendAIChat failed:", e);
-    }
-    return null;
-  },
-
-  async evaluateSentence(sentence) {
-    if (!(await this.useServer())) return YugoLocal.evaluateSentence(sentence);
-    try {
-      const resp = await fetch(`${this.baseUrl}/ai/evaluate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sentence })
-      });
-      if (resp.ok) return await resp.json();
-    } catch (e) {
-      console.warn("API evaluateSentence failed:", e);
-    }
-    return null;
   }
 };
 
 // Decide between the local backend and the in-browser engine as soon as the
-// page loads, so the HUD badge and AI model label are accurate on every view.
+// page loads, so the HUD badge is accurate on every view.
 document.addEventListener("DOMContentLoaded", () => YugoAPI.checkHealth());

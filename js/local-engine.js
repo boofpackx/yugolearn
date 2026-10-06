@@ -1,8 +1,7 @@
 /* =========================================================
    YUGOLEARN — In-Browser Engine
    Mirrors the FastAPI backend (SRS logistics, mistake journal,
-   vocab bank, analytics, built-in Serbian tutor) on top of
-   localStorage, so the app runs fully on a static host such as
+   vocab bank, analytics) on top of localStorage, so the app runs fully on a static host such as
    GitHub Pages. Used whenever the local backend is not reachable.
    ========================================================= */
 
@@ -88,76 +87,7 @@ const YugoLocal = (() => {
   ];
 
   // -------------------------------------------------------------
-  // 2. AI TUTOR SCENARIOS & BUILT-IN SERBIAN NLP (backend/intelligence.py)
-  // -------------------------------------------------------------
-  const SCENARIOS = {
-    kafana: {
-      title: "☕ Belgrade Kafana / Kafić",
-      description: "Order coffee (domaća or espresso), rakija, water, and food from waiter Dušan.",
-      starter: "Добар дан, изволите! Шта могу да вам донесем данас? (Good day, how can I help you?)"
-    },
-    friend: {
-      title: "🤝 Meeting a Friend in Dorćol",
-      description: "Catch up with Milica, plan what to do in Belgrade, talk about the weather and food.",
-      starter: "Ћао! Како си? Баш ми је драго што те видим! Шта има ново? (Hi! How are you? What's new?)"
-    },
-    market: {
-      title: "🛒 Kalenić Green Market (Пијаца)",
-      description: "Buy fresh fruit, vegetables, or kajmak from vendor Jovanka at the market.",
-      starter: "Добар дан, душо! Изволи, погледај ове свеже јабуке и домаћи сир! Шта желиш? (Good day! Look at these fresh apples!)"
-    },
-    tutor: {
-      title: "🎓 Professor Vuk (Grammar & Case Specialist)",
-      description: "Ask any question about Serbian Cyrillic, 7 Padeži (cases), conjugations, or culture.",
-      starter: "Поздрав! Ја сам професор Вук. Спреман сам да одговорим на сва твоја питања о српском језику. Шта те данас занима?"
-    }
-  };
-
-  const FALLBACK_RESPONSES = {
-    kafana: [
-      ["каф", "Одлично! Једна домаћа кувана кафа са ратлуком, или еспресо са млеком? [Odlično! Jedna domaća kuvana kafa sa ratlukom, ili espreso sa mlekom?] (Great! One domestic Turkish coffee with Turkish delight, or espresso with milk?)"],
-      ["ракиј", "Имамо одличну домаћу шљивовицу и дуњу! Шта више волите? [Imamo odličnu domaću šljivovicu i dunju! Šta više volite?] (We have great homemade plum and quince rakija! Which do you prefer?)"],
-      ["вод", "Наравно, стиже чаша хладне воде са лимуном одмах! [Naravno, stiže čaša hladne vode sa limunom odmah!] (Of course, a glass of cold water with lemon coming right up!)"],
-      ["јес|храна|мени|ћевап|пљескавиц", "Препоручујем наше ћевапе са кајмаком и свежим луком! [Preporučujem naše ćevape sa kajmakom i svežim lukom!] (I recommend our ćevapi with kajmak and fresh onion!)"],
-      ["хвала", "Нема на чему, уживајте! Могу ли још нешто да вам донесем? [Nema na čemu, uživajte! Mogu li još nešto da vam donesem?] (You are welcome, enjoy! Can I bring you anything else?)"],
-      ["рачун|плати", "Наравно! Укупно је 480 динара. Плаћате ли картицом или готовином? [Naravno! Ukupno je 480 dinara. Plaćate li karticom ili gotovinom?] (Sure! Total is 480 dinars. Paying by card or cash?)"]
-    ],
-    friend: [
-      ["добро|супер", "Баш ми је драго! Хоћемо ли у шетњу до Калемегдана касније? [Baš mi je drago! Hoćemo li u šetnju do Kalemegdana kasnije?] (I'm so glad! Want to take a walk to Kalemegdan later?)"],
-      ["кафа|кафић", "Идемо у онај кафић у Доситејевој улици, имају феноменалну кафу! [Idemo u onaj kafić u Dositejevoj ulici, imaju fenomenalnu kafu!] (Let's go to that cafe on Dositejeva street, they have amazing coffee!)"],
-      ["шта радиш|где си", "Ево ме код куће, спремам се да изађем. Шта ти планираш данас? [Evo me kod kuće, spremam se da izađem. Šta ti planiraš danas?] (Here I am at home getting ready to go out. What are you planning today?)"],
-      ["хвала|ћао", "Видимо се ускоро, чујемо се! Ћао! [Vidimo se uskoro, čujemo se! Ćao!] (See you soon, talk to you later! Bye!)"]
-    ],
-    market: [
-      ["јабук", "Јабуке су 120 динара килограм, преслатке су! Колико килограма желиш? [Jabuke su 120 dinara kilogram, preslatke su! Koliko kilograma želiš?] (Apples are 120 dinars a kilo, very sweet! How many kilos do you want?)"],
-      ["сир|кајмак", "Овај кајмак је јутрос стигао са Златибора! Пробај мало! [Ovaj kajmak je jutros stigao sa Zlatibora! Probaj malo!] (This kajmak arrived this morning from Zlatibor! Try a little!)"],
-      ["пошто|цена|колико", "Све је домаће и свеже! За тебе може и мали попуст ако узмеш два килограма. [Sve je domaće i sveže! Za tebe može i mali popust ako uzmeš dva kilograma.] (Everything is home-grown and fresh! For you, a small discount if you take two kilos.)"]
-    ],
-    tutor: [
-      ["падеж|падежи|case", "Српски језик има 7 падежа: 1. Номинатив (ко? шта?), 2. Генитив (кога? чега?), 3. Датив (коме? чему?), 4. Акузатив (кога? шта?), 5. Вокатив (дозивање: Хеј!), 6. Инструментал (с ким? чиме?), 7. Локатив (о коме? о чему?). Који падеж желиш да вежбамо?"],
-      ["азбук|слово|писмо|alphabet", "Српска ћирилица има тачно 30 слова. Правило Вука Караџића је генијално: 'Пиши као што говориш, а читај као што је написано.' Нема тихих слова!"],
-      ["бити|verb", "Глагол БИТИ у презенту гласи: ја сам, ти си, он/она/оно је, ми смо, ви сте, они су. На пример: 'Ја сам студент' (I am a student)."]
-    ]
-  };
-
-  const GENERIC_REPLIES = {
-    kafana: "Одлично! Све ће бити спремно за пар минута. Још нешто за вас? [Odlično! Sve će biti spremno za par minuta. Još nešto za vas?] (Great! Everything will be ready in a couple minutes. Anything else for you?)",
-    friend: "Супер звучи! Хајде да се видимо око шест сати у центру! [Super zvuči! Hajde da se vidimo oko šest sati u centru!] (Sounds super! Let's meet around 6 o'clock in the center!)",
-    market: "Ево, изволи свеже спаковано! Пријатно и дођи нам опет! [Evo, izvoli sveže spakovano! Prijatno i dođi nam opet!] (Here you go, freshly packed! Have a nice day and come again!)",
-    tutor: "Одлично вежбаш! Свака реченица коју напишеш на ћирилици гради твоју течност. Настави даље! [Odlično vežbaš! Svaka rečenica koju napišeš na ćirilici gradi tvoju tečnost.] (Great practice! Keep going!)"
-  };
-
-  function fallbackTutorReply(scenario, userText) {
-    const userLower = userText.toLowerCase();
-    const responses = FALLBACK_RESPONSES[scenario] || FALLBACK_RESPONSES.tutor;
-    for (const [pattern, reply] of responses) {
-      if (new RegExp(pattern).test(userLower)) return reply;
-    }
-    return GENERIC_REPLIES[scenario] || GENERIC_REPLIES.tutor;
-  }
-
-  // -------------------------------------------------------------
-  // 3. STORAGE
+  // 2. STORAGE
   // -------------------------------------------------------------
   let db = null;
 
@@ -241,7 +171,7 @@ const YugoLocal = (() => {
   const byStr = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 
   // -------------------------------------------------------------
-  // 4. SPACED REPETITION LOGISTICS (backend/logistics.py)
+  // 3. SPACED REPETITION LOGISTICS (backend/logistics.py)
   // -------------------------------------------------------------
   function calculateReview(currentInterval, repetitions, easeFactor, lapses, grade) {
     const now = new Date();
@@ -379,7 +309,7 @@ const YugoLocal = (() => {
       recommended_focus: (
         unresolved > 4 ? "Conquer your unresolved mistakes in the Mistakes Journal!"
         : dueCount > 0 ? "Clear your Spaced Repetition queue to lock down memory retention!"
-        : "Explore new vocabulary or chat with the Belgrade AI Tutor!"
+        : "Explore new vocabulary or run a quick letter drill!"
       )
     };
   }
@@ -442,7 +372,7 @@ const YugoLocal = (() => {
   }
 
   // -------------------------------------------------------------
-  // 5. MISTAKE JOURNAL (backend/database.py)
+  // 4. MISTAKE JOURNAL (backend/database.py)
   // -------------------------------------------------------------
   function getMistakes(onlyUnresolved = true) {
     const all = load().mistakes;
@@ -489,7 +419,7 @@ const YugoLocal = (() => {
   }
 
   // -------------------------------------------------------------
-  // 6. VOCABULARY BANK
+  // 5. VOCABULARY BANK
   // -------------------------------------------------------------
   function getVocab(q = "", category = "all") {
     const needle = (q || "").toLowerCase();
@@ -542,65 +472,6 @@ const YugoLocal = (() => {
     return { status: "ok" };
   }
 
-  // -------------------------------------------------------------
-  // 7. AI TUTOR (built-in engine)
-  // -------------------------------------------------------------
-  function getScenarios() {
-    return JSON.parse(JSON.stringify(SCENARIOS));
-  }
-
-  function sendAIChat(scenario, message) {
-    const rawReply = fallbackTutorReply(scenario, message);
-
-    const correctionMatch = rawReply.match(/\{Correction:\s*(.*?)\}/);
-    const correction = correctionMatch ? correctionMatch[1].trim() : null;
-    const displayText = rawReply.replace(/\{Correction:.*?\}/g, "").trim();
-
-    const latMatch = displayText.match(/\[(?:Latin:)?\s*(.*?)\]/);
-    const enMatch = displayText.match(/\((?:English:)?\s*(.*?)\)/);
-
-    return {
-      reply_raw: rawReply,
-      reply_display: displayText,
-      latin: latMatch ? latMatch[1].trim() : YugoTranslit.toLatin(displayText),
-      english: enMatch ? enMatch[1].trim() : "",
-      correction,
-      engine: "builtin_nlp"
-    };
-  }
-
-  function evaluateSentence(sentence) {
-    const cleaned = (sentence || "").trim();
-    const hasLatin = /[A-Za-z]/.test(cleaned);
-    const hasCyrillic = /[А-Яа-яЂђЈјЉљЊњЋћЏџ]/.test(cleaned);
-    const mixedScript = hasLatin && hasCyrillic;
-
-    let warning = null;
-    if (/\bB\b/.test(cleaned) || /B[aeiou]/.test(cleaned)) {
-      warning = "Watch out: Latin 'B' sounds like 'B', but Cyrillic 'В' sounds like 'V'! The true Cyrillic 'B' is 'Б'.";
-    } else if (/\bH\b/.test(cleaned) || /H[aeiou]/.test(cleaned)) {
-      warning = "Watch out: Latin 'H' looks like Cyrillic 'Н', which sounds like 'N'! Cyrillic for sound 'H' is 'Х'.";
-    }
-
-    const words = cleaned.split(/\s+/).filter(Boolean);
-    let score = 90;
-    if (mixedScript) score -= 20;
-    if (words.length >= 3) score += 10;
-
-    return {
-      original: cleaned,
-      cyrillic: YugoTranslit.toCyrillic(cleaned),
-      latin: YugoTranslit.toLatin(cleaned),
-      score: Math.min(100, Math.max(50, score)),
-      mixed_script: mixedScript,
-      warning,
-      word_count: words.length,
-      feedback: (!mixedScript && !warning)
-        ? "Excellent native phonetic composition! Keep using full Cyrillic script."
-        : "Good attempt! Pay close attention to avoiding mixing Latin and Cyrillic glyphs."
-    };
-  }
-
   function reset() {
     db = null;
     try {
@@ -613,7 +484,6 @@ const YugoLocal = (() => {
     getLogisticsPlan, getAnalytics, logSession,
     getMistakes, logMistake, resolveMistake,
     getVocab, addVocab, deleteVocab,
-    getScenarios, sendAIChat, evaluateSentence,
     reset
   };
 })();

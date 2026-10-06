@@ -1,6 +1,6 @@
 # YUGOLEARN
 
-A no-fluff web app for learning the Serbian Cyrillic alphabet and the Serbian language: letter drills, flashcards, spaced repetition, quizzes, phrases with audio, grammar, and a Belgrade roleplay tutor.
+A no-fluff web app for learning the Serbian Cyrillic alphabet and the Serbian language: letter drills, flashcards, spaced repetition, quizzes, phrases with audio, and grammar.
 
 **Live site:** https://boofpackx.github.io/yugolearn/
 
@@ -12,21 +12,18 @@ Open the live site. Everything runs in your browser, and progress is saved in th
 
 - All lessons work: Azbuka, Drill, Cards, Quiz, Match, Phrases, Grammar, Convert.
 - Smart SRS, Mistakes, Vocab Bank and Logistics run on a built-in engine that uses the same scheduling rules as the Python backend.
-- The AI Tutor uses the built-in Serbian phrase engine (no Ollama).
 
 The site redeploys automatically on every push to the default branch (see `.github/workflows/pages.yml`).
 
-### 2. On your PC (full version)
+### 2. On your PC
 
-Adds the SQLite database (`backend/yugolearn.db`) and the Ollama-powered AI tutor.
+Saves progress to the SQLite database (`backend/yugolearn.db`) instead of the browser.
 
 Requirements: Python 3.10+, then:
 
 ```
 pip install fastapi uvicorn
 ```
-
-Optional: install [Ollama](https://ollama.com) and pull a model (for example `ollama pull qwen3:4b`) for the AI tutor.
 
 On Windows, double-click `start_yugolearn.bat`. Otherwise:
 
@@ -48,5 +45,5 @@ js/data.js            Alphabet, decks, phrases, grammar content
 js/local-engine.js    In-browser engine used when the backend is not running
 js/api.js             Talks to the backend, or falls back to the in-browser engine
 js/app.js             Views, router, audio, state
-backend/              FastAPI server, SQLite database, SRS logistics, AI tutor
+backend/              FastAPI server, SQLite database, SRS logistics
 ```
