@@ -350,6 +350,7 @@ const YugoStore = {
 
   resetAll() {
     localStorage.removeItem("yugolearn_state_v1");
+    YugoLocal.reset();
     this.data = {
       xp: 0,
       streak: 1,
@@ -2425,7 +2426,7 @@ YugoRouter.register("/srs", async (container) => {
         <div class="big-score">${reviewedCount}<span> CARDS</span></div>
         <div class="verdict">
           <h2>ОДЛИЧАН ТРУД · MEMORY UPDATED</h2>
-          <p class="lead">+${sessionXp} XP added to your persistent SQLite profile.</p>
+          <p class="lead">+${sessionXp} XP added to your ${YugoAPI.isOnline ? "persistent SQLite profile" : "profile in this browser"}.</p>
         </div>
         <div class="row center" style="margin-top:24px;">
           <a href="#/logistics" class="btn btn-yellow btn-lg">View Memory Forecast 📊</a>
@@ -3035,6 +3036,7 @@ YugoRouter.register("/logistics", async (container) => {
 
     <div class="box" style="margin-top:28px;">
       <span class="kicker">PERSISTENCE ARCHITECTURE</span>
+      ${YugoAPI.isOnline ? `
       <h3>SQLITE WAL DATABASE ENGINE</h3>
       <div style="margin-top:12px;font-size:0.9rem;display:grid;gap:8px;">
         <div><b>Database Path:</b> <code>backend/yugolearn.db</code> (Persistent across all sessions)</div>
@@ -3043,7 +3045,13 @@ YugoRouter.register("/logistics", async (container) => {
       </div>
       <div class="row" style="margin-top:16px;">
         <button class="btn btn-yellow btn-md" id="btn-force-sync">Force Persistent Sync</button>
-      </div>
+      </div>` : `
+      <h3>IN-BROWSER MEMORY ENGINE</h3>
+      <div style="margin-top:12px;font-size:0.9rem;display:grid;gap:8px;">
+        <div><b>Storage:</b> This browser's local storage (kept between visits on this device)</div>
+        <div><b>Scheduling:</b> Same SM-2 logistics as the SQLite backend</div>
+        <div><b>Local Intelligence:</b> Built-in Serbian Heuristic NLP</div>
+      </div>`}
     </div>
   `;
 
@@ -3216,11 +3224,13 @@ YugoRouter.register("/settings", (container) => {
       <div class="box field">
         <div class="lbl">Local Intelligence & Persistent Memory (Backend)</div>
         <p class="help">
-          Connected to local SQLite database: <code>backend/yugolearn.db</code>.
+          ${YugoAPI.isOnline
+            ? `Connected to local SQLite database: <code>backend/yugolearn.db</code>.`
+            : `Browser mode: progress is saved in this browser. Run <code>start_yugolearn.bat</code> on your PC for the SQLite database and Ollama AI.`}
           Local AI model: <b>${YugoAPI.activeModel.toUpperCase()}</b>.
         </p>
         <div class="row">
-          <button class="btn btn-yellow btn-sm" id="btn-sync-sqlite">💾 Sync State to SQLite Database</button>
+          ${YugoAPI.isOnline ? `<button class="btn btn-yellow btn-sm" id="btn-sync-sqlite">💾 Sync State to SQLite Database</button>` : ""}
           <a href="#/logistics" class="btn btn-ink btn-sm">📊 View Logistics Forecast</a>
           <a href="#/tutor" class="btn btn-red btn-sm">🤖 Open AI Belgrade Tutor</a>
         </div>

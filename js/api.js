@@ -9,8 +9,26 @@ const YugoAPI = {
   baseUrl: "http://127.0.0.1:8000/api",
   isOnline: false,
   activeModel: "Loading...",
+  _health: null,
 
-  async checkHealth() {
+  // The Python backend only ever runs on the learner's own machine. A hosted
+  // copy (e.g. GitHub Pages) skips the probe and uses the in-browser engine.
+  isLocalHost() {
+    const host = location.hostname;
+    return location.protocol === "file:" || host === "localhost" || host === "127.0.0.1" || host === "[::1]";
+  },
+
+  // Probes the backend once per page load; every caller shares the result.
+  checkHealth() {
+    if (!this._health) this._health = this.probeServer();
+    return this._health;
+  },
+
+  async probeServer() {
+    if (!this.isLocalHost()) {
+      this.useBrowserEngine();
+      return null;
+    }
     try {
       const resp = await fetch(`${this.baseUrl}/health`, { signal: AbortSignal.timeout(2000) });
       if (!resp.ok) throw new Error("Health check failed");
@@ -20,10 +38,21 @@ const YugoAPI = {
       this.updateHudBadge(true, data.ai?.active_model);
       return data;
     } catch (e) {
-      this.isOnline = false;
-      this.updateHudBadge(false);
+      this.useBrowserEngine();
       return null;
     }
+  },
+
+  useBrowserEngine() {
+    this.isOnline = false;
+    this.activeModel = "Built-in Serbian NLP";
+    this.updateHudBadge(false);
+  },
+
+  // True when calls should go to the backend, false for the in-browser engine.
+  async useServer() {
+    await this.checkHealth();
+    return this.isOnline;
   },
 
   updateHudBadge(online, modelName = "") {
@@ -35,8 +64,8 @@ const YugoAPI = {
       el.title = `Connected to local SQLite database & Ollama (${modelName})`;
     } else {
       el.className = "hud-item hud-backend offline";
-      el.innerHTML = `⚠️ <span class="dot"></span> LOCAL MIRROR`;
-      el.title = "Running on browser storage mirror. Start backend for persistent SQLite memory & AI tutor.";
+      el.innerHTML = `💾 <span class="dot"></span> BROWSER MODE`;
+      el.title = "Progress is saved in this browser. Run the local backend for SQLite memory & the Ollama AI tutor.";
     }
   },
 
@@ -79,6 +108,7 @@ const YugoAPI = {
 
   // Spaced Repetition Logistics
   async getSRSQueue(limit = 25) {
+    if (!(await this.useServer())) return YugoLocal.getSRSQueue(limit);
     try {
       const resp = await fetch(`${this.baseUrl}/srs/queue?limit=${limit}`);
       if (resp.ok) return await resp.json();
@@ -89,6 +119,7 @@ const YugoAPI = {
   },
 
   async submitSRSReview(cardId, grade) {
+    if (!(await this.useServer())) return YugoLocal.submitSRSReview(cardId, grade);
     try {
       const resp = await fetch(`${this.baseUrl}/srs/review`, {
         method: "POST",
@@ -103,6 +134,7 @@ const YugoAPI = {
   },
 
   async getSRSForecast() {
+    if (!(await this.useServer())) return YugoLocal.getSRSForecast();
     try {
       const resp = await fetch(`${this.baseUrl}/srs/forecast`);
       if (resp.ok) return await resp.json();
@@ -114,6 +146,7 @@ const YugoAPI = {
 
   // Logistics & Analytics
   async getLogisticsPlan() {
+    if (!(await this.useServer())) return YugoLocal.getLogisticsPlan();
     try {
       const resp = await fetch(`${this.baseUrl}/logistics/plan`);
       if (resp.ok) return await resp.json();
@@ -124,6 +157,7 @@ const YugoAPI = {
   },
 
   async getAnalytics() {
+    if (!(await this.useServer())) return YugoLocal.getAnalytics();
     try {
       const resp = await fetch(`${this.baseUrl}/analytics`);
       if (resp.ok) return await resp.json();
@@ -134,7 +168,7 @@ const YugoAPI = {
   },
 
   async logSession(mode, durationSeconds, totalItems, correctItems, xpEarned) {
-    if (!this.isOnline) return;
+    if (!(await this.useServer())) return YugoLocal.logSession(mode, durationSeconds, totalItems, correctItems, xpEarned);
     try {
       await fetch(`${this.baseUrl}/session/log`, {
         method: "POST",
@@ -154,6 +188,7 @@ const YugoAPI = {
 
   // Mistake Journal & Weakness Logistics
   async getMistakes(onlyUnresolved = true) {
+    if (!(await this.useServer())) return YugoLocal.getMistakes(onlyUnresolved);
     try {
       const resp = await fetch(`${this.baseUrl}/mistakes?only_unresolved=${onlyUnresolved}`);
       if (resp.ok) return await resp.json();
@@ -164,7 +199,7 @@ const YugoAPI = {
   },
 
   async logMistake(mode, itemId, prompt, userAns, correctAns, explanation = "", category = "") {
-    if (!this.isOnline) return;
+    if (!(await this.useServer())) return YugoLocal.logMistake(mode, itemId, prompt, userAns, correctAns, explanation, category);
     try {
       await fetch(`${this.baseUrl}/mistakes/log`, {
         method: "POST",
@@ -185,6 +220,7 @@ const YugoAPI = {
   },
 
   async resolveMistake(mistakeId) {
+    if (!(await this.useServer())) return YugoLocal.resolveMistake(mistakeId);
     try {
       const resp = await fetch(`${this.baseUrl}/mistakes/resolve`, {
         method: "POST",
@@ -200,6 +236,7 @@ const YugoAPI = {
 
   // LingQ-Style Vocabulary Bank
   async getVocab(q = "", category = "all") {
+    if (!(await this.useServer())) return YugoLocal.getVocab(q, category);
     try {
       const url = new URL(`${this.baseUrl}/vocab`);
       if (q) url.searchParams.set("q", q);
@@ -213,6 +250,7 @@ const YugoAPI = {
   },
 
   async addVocab(cyr, lat, en, category = "custom", notes = "") {
+    if (!(await this.useServer())) return YugoLocal.addVocab(cyr, lat, en, category, notes);
     try {
       const resp = await fetch(`${this.baseUrl}/vocab`, {
         method: "POST",
@@ -227,6 +265,7 @@ const YugoAPI = {
   },
 
   async deleteVocab(id) {
+    if (!(await this.useServer())) return YugoLocal.deleteVocab(id);
     try {
       const resp = await fetch(`${this.baseUrl}/vocab/${id}`, { method: "DELETE" });
       if (resp.ok) return await resp.json();
@@ -238,6 +277,7 @@ const YugoAPI = {
 
   // Local AI & Conversational Tutor
   async getScenarios() {
+    if (!(await this.useServer())) return YugoLocal.getScenarios();
     try {
       const resp = await fetch(`${this.baseUrl}/ai/scenarios`);
       if (resp.ok) return await resp.json();
@@ -248,6 +288,7 @@ const YugoAPI = {
   },
 
   async sendAIChat(scenario, message, model = null) {
+    if (!(await this.useServer())) return YugoLocal.sendAIChat(scenario, message);
     try {
       const resp = await fetch(`${this.baseUrl}/ai/chat`, {
         method: "POST",
@@ -262,6 +303,7 @@ const YugoAPI = {
   },
 
   async evaluateSentence(sentence) {
+    if (!(await this.useServer())) return YugoLocal.evaluateSentence(sentence);
     try {
       const resp = await fetch(`${this.baseUrl}/ai/evaluate`, {
         method: "POST",
@@ -275,3 +317,7 @@ const YugoAPI = {
     return null;
   }
 };
+
+// Decide between the local backend and the in-browser engine as soon as the
+// page loads, so the HUD badge and AI model label are accurate on every view.
+document.addEventListener("DOMContentLoaded", () => YugoAPI.checkHealth());
